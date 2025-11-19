@@ -1,10 +1,11 @@
 'use client'
 
 import { useState } from 'react'
-import { Calendar, CreditCard, Package, Plus, Search, ShoppingCart, Trash2, Check, Receipt, Clock, Gift, Percent, Eye, FileText, Users, DollarSign } from 'lucide-react'
+import { Calendar, CreditCard, Package, Plus, Search, ShoppingCart, Trash2, Check, Receipt, Clock, Gift, Percent, Eye, FileText, Users, DollarSign, Edit, X, Send, Download, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import {
   Table,
@@ -44,17 +45,202 @@ interface Order {
   orderNumber: string
   date: string
   customer: string
+  customerEmail?: string
+  customerPhone?: string
   total: number
   status: 'pending' | 'completed' | 'cancelled'
   items: number
+  products?: Array<{
+    id: string
+    name: string
+    sku: string
+    quantity: number
+    price: number
+    subtotal: number
+  }>
+  paymentMethod?: 'cash' | 'card' | 'transfer'
+  discount?: number
+  tax?: number
+  notes?: string
+}
+
+interface Quotation {
+  id: string
+  number: string
+  customer: string
+  customerEmail?: string
+  customerPhone?: string
+  date: string
+  expiryDate?: string
+  total: number
+  status: 'pending' | 'approved' | 'rejected' | 'converted' | 'expired'
+  items: Array<{
+    id: string
+    name: string
+    sku: string
+    quantity: number
+    price: number
+    subtotal: number
+  }>
+  notes?: string
+  discount?: number
+  tax?: number
 }
 
 const recentOrders: Order[] = [
-  { id: '1', orderNumber: 'ORD-2024-001', date: '2024-01-15', customer: 'Juan Pérez', total: 459.97, status: 'completed', items: 3 },
-  { id: '2', orderNumber: 'ORD-2024-002', date: '2024-01-15', customer: 'María García', total: 89.99, status: 'pending', items: 1 },
-  { id: '3', orderNumber: 'ORD-2024-003', date: '2024-01-14', customer: 'Carlos Rodríguez', total: 679.96, status: 'completed', items: 4 },
-  { id: '4', orderNumber: 'ORD-2024-004', date: '2024-01-14', customer: 'Ana Martínez', total: 199.99, status: 'completed', items: 2 },
-  { id: '5', orderNumber: 'ORD-2024-005', date: '2024-01-13', customer: 'Luis Fernández', total: 45.99, status: 'cancelled', items: 1 },
+  {
+    id: '1',
+    orderNumber: 'ORD-2024-001',
+    date: '2024-01-15',
+    customer: 'Juan Pérez',
+    customerEmail: 'juan.perez@email.com',
+    customerPhone: '+598 99 123 456',
+    total: 459.97,
+    status: 'completed',
+    items: 3,
+    products: [
+      { id: '1', name: 'Teclado Mecánico RGB', sku: 'TEC-001', quantity: 2, price: 89.99, subtotal: 179.98 },
+      { id: '2', name: 'Mouse Inalámbrico Pro', sku: 'MOU-015', quantity: 1, price: 45.99, subtotal: 45.99 },
+      { id: '3', name: 'Webcam HD 1080p', sku: 'WEB-003', quantity: 2, price: 59.99, subtotal: 119.98 },
+    ],
+    paymentMethod: 'card',
+    discount: 5,
+    tax: 22,
+    notes: 'Cliente frecuente - Descuento aplicado',
+  },
+  {
+    id: '2',
+    orderNumber: 'ORD-2024-002',
+    date: '2024-01-15',
+    customer: 'María García',
+    customerEmail: 'maria.garcia@email.com',
+    total: 89.99,
+    status: 'pending',
+    items: 1,
+    products: [
+      { id: '1', name: 'Mouse Pad XXL', sku: 'PAD-005', quantity: 1, price: 24.99, subtotal: 24.99 },
+    ],
+    paymentMethod: 'cash',
+    tax: 22,
+  },
+  {
+    id: '3',
+    orderNumber: 'ORD-2024-003',
+    date: '2024-01-14',
+    customer: 'Carlos Rodríguez',
+    customerEmail: 'carlos.rodriguez@email.com',
+    customerPhone: '+598 99 345 678',
+    total: 679.96,
+    status: 'completed',
+    items: 4,
+    products: [
+      { id: '1', name: 'Monitor 27" 4K', sku: 'MON-008', quantity: 1, price: 399.99, subtotal: 399.99 },
+      { id: '2', name: 'Auriculares Gaming', sku: 'AUR-012', quantity: 2, price: 79.99, subtotal: 159.98 },
+      { id: '3', name: 'Teclado Inalámbrico', sku: 'TEC-007', quantity: 1, price: 65.99, subtotal: 65.99 },
+    ],
+    paymentMethod: 'transfer',
+    tax: 22,
+    notes: 'Entrega en oficina',
+  },
+  {
+    id: '4',
+    orderNumber: 'ORD-2024-004',
+    date: '2024-01-14',
+    customer: 'Ana Martínez',
+    customerEmail: 'ana.martinez@email.com',
+    total: 199.99,
+    status: 'completed',
+    items: 2,
+    products: [
+      { id: '1', name: 'Monitor 24" Full HD', sku: 'MON-015', quantity: 1, price: 199.99, subtotal: 199.99 },
+    ],
+    paymentMethod: 'card',
+    tax: 22,
+  },
+  {
+    id: '5',
+    orderNumber: 'ORD-2024-005',
+    date: '2024-01-13',
+    customer: 'Luis Fernández',
+    customerPhone: '+598 99 567 890',
+    total: 45.99,
+    status: 'cancelled',
+    items: 1,
+    products: [
+      { id: '1', name: 'Mouse Inalámbrico Pro', sku: 'MOU-015', quantity: 1, price: 45.99, subtotal: 45.99 },
+    ],
+    paymentMethod: 'cash',
+    tax: 22,
+    notes: 'Cancelado por cliente - Cambio de opinión',
+  },
+]
+
+const initialQuotations: Quotation[] = [
+  {
+    id: '1',
+    number: 'COT-2024-015',
+    customer: 'Juan Pérez',
+    customerEmail: 'juan.perez@email.com',
+    customerPhone: '+598 99 123 456',
+    date: '2024-01-14',
+    expiryDate: '2024-02-14',
+    total: 1245.00,
+    status: 'pending',
+    items: [
+      { id: '1', name: 'Teclado Mecánico RGB', sku: 'TEC-001', quantity: 5, price: 89.99, subtotal: 449.95 },
+      { id: '2', name: 'Monitor 27" 4K', sku: 'MON-008', quantity: 2, price: 399.99, subtotal: 799.98 },
+    ],
+    notes: 'Cotización para renovación de equipos de oficina',
+    discount: 5,
+    tax: 22,
+  },
+  {
+    id: '2',
+    number: 'COT-2024-014',
+    customer: 'María García',
+    customerEmail: 'maria.garcia@email.com',
+    customerPhone: '+598 99 234 567',
+    date: '2024-01-13',
+    expiryDate: '2024-02-13',
+    total: 680.50,
+    status: 'pending',
+    items: [
+      { id: '1', name: 'Mouse Inalámbrico Pro', sku: 'MOU-015', quantity: 10, price: 45.99, subtotal: 459.90 },
+      { id: '2', name: 'Auriculares Gaming', sku: 'AUR-012', quantity: 3, price: 79.99, subtotal: 239.97 },
+    ],
+    discount: 0,
+    tax: 22,
+  },
+  {
+    id: '3',
+    number: 'COT-2024-013',
+    customer: 'Carlos Rodríguez',
+    customerEmail: 'carlos.rodriguez@email.com',
+    customerPhone: '+598 99 345 678',
+    date: '2024-01-12',
+    expiryDate: '2024-02-12',
+    total: 2150.75,
+    status: 'approved',
+    items: [
+      { id: '1', name: 'Monitor 27" 4K', sku: 'MON-008', quantity: 5, price: 399.99, subtotal: 1999.95 },
+    ],
+    notes: 'Aprobada por cliente, esperando confirmación de pago',
+    discount: 10,
+    tax: 22,
+  },
+  {
+    id: '4',
+    number: 'COT-2024-012',
+    customer: 'Ana Martínez',
+    date: '2024-01-11',
+    expiryDate: '2024-02-11',
+    total: 445.50,
+    status: 'converted',
+    items: [
+      { id: '1', name: 'Webcam HD 1080p', sku: 'WEB-003', quantity: 7, price: 59.99, subtotal: 419.93 },
+    ],
+    tax: 22,
+  },
 ]
 
 export function SalesModule() {
@@ -74,6 +260,19 @@ export function SalesModule() {
   const [selectedCustomer, setSelectedCustomer] = useState('')
   const [selectedPayment, setSelectedPayment] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [quotations, setQuotations] = useState<Quotation[]>(initialQuotations)
+  const [quotationAddDialogOpen, setQuotationAddDialogOpen] = useState(false)
+  const [quotationViewDialogOpen, setQuotationViewDialogOpen] = useState(false)
+  const [quotationEditDialogOpen, setQuotationEditDialogOpen] = useState(false)
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(null)
+  const [quotationSearchTerm, setQuotationSearchTerm] = useState('')
+  const [quotationStatusFilter, setQuotationStatusFilter] = useState<string>('all')
+  const [loyaltyPointsPerPurchase, setLoyaltyPointsPerPurchase] = useState({ amount: 10, points: 1 })
+  const [loyaltyPointsDiscount, setLoyaltyPointsDiscount] = useState({ points: 100, discount: 5 })
+  const [editPointsPerPurchaseOpen, setEditPointsPerPurchaseOpen] = useState(false)
+  const [editPointsDiscountOpen, setEditPointsDiscountOpen] = useState(false)
+  const [tempPointsPerPurchase, setTempPointsPerPurchase] = useState({ amount: 10, points: 1 })
+  const [tempPointsDiscount, setTempPointsDiscount] = useState({ points: 100, discount: 5 })
   const { toast } = useToast()
 
   const addToCart = () => {
@@ -493,57 +692,556 @@ export function SalesModule() {
         </DialogContent>
       </Dialog>
 
+      {/* Quotations Management Dialog */}
       <Dialog open={quotationsDialogOpen} onOpenChange={setQuotationsDialogOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="max-w-6xl max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Gestión de Cotizaciones</DialogTitle>
+            <DialogTitle className="text-2xl">Gestión de Cotizaciones</DialogTitle>
             <DialogDescription>Administrar presupuestos y cotizaciones pendientes</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex justify-end">
-              <Button size="sm" onClick={() => toast({ title: "Nueva cotización", description: "Creando nueva cotización" })}>
+          <div className="space-y-4 py-4 flex-1 overflow-hidden flex flex-col">
+            {/* Filtros y acciones */}
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por número, cliente..."
+                    value={quotationSearchTerm}
+                    onChange={(e) => setQuotationSearchTerm(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+                <Select value={quotationStatusFilter} onValueChange={setQuotationStatusFilter}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los estados</SelectItem>
+                    <SelectItem value="pending">Pendiente</SelectItem>
+                    <SelectItem value="approved">Aprobada</SelectItem>
+                    <SelectItem value="rejected">Rechazada</SelectItem>
+                    <SelectItem value="converted">Convertida</SelectItem>
+                    <SelectItem value="expired">Vencida</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button size="sm" onClick={() => {
+                setSelectedQuotation(null)
+                setQuotationAddDialogOpen(true)
+              }}>
                 <Plus className="h-4 w-4 mr-2" />
                 Nueva Cotización
               </Button>
             </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Número</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Total</TableHead>
-                  <TableHead>Estado</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-mono">COT-2024-015</TableCell>
-                  <TableCell>Juan Pérez</TableCell>
-                  <TableCell>2024-01-14</TableCell>
-                  <TableCell>$1,245.00</TableCell>
-                  <TableCell><Badge variant="secondary">Pendiente</Badge></TableCell>
-                  <TableCell>
-                    <Button size="sm" variant="outline" onClick={() => toast({ title: "Convirtiendo", description: "Convirtiendo cotización a venta" })}>
-                      Convertir a Venta
-                    </Button>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-mono">COT-2024-014</TableCell>
-                  <TableCell>María García</TableCell>
-                  <TableCell>2024-01-13</TableCell>
-                  <TableCell>$680.50</TableCell>
-                  <TableCell><Badge variant="secondary">Pendiente</Badge></TableCell>
-                  <TableCell>
-                    <Button size="sm" variant="outline" onClick={() => toast({ title: "Convirtiendo", description: "Convirtiendo cotización a venta" })}>
-                      Convertir a Venta
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+
+            {/* Tabla con scroll */}
+            <div className="flex-1 overflow-auto border rounded-lg">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead className="w-[140px]">Número</TableHead>
+                    <TableHead className="min-w-[180px]">Cliente</TableHead>
+                    <TableHead className="w-[120px]">Fecha</TableHead>
+                    <TableHead className="w-[120px]">Válida Hasta</TableHead>
+                    <TableHead className="w-[120px] text-right">Total</TableHead>
+                    <TableHead className="w-[120px]">Estado</TableHead>
+                    <TableHead className="w-[180px]">Acciones</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {quotations
+                    .filter((quote) => {
+                      const matchesSearch = quote.number.toLowerCase().includes(quotationSearchTerm.toLowerCase()) ||
+                                          quote.customer.toLowerCase().includes(quotationSearchTerm.toLowerCase())
+                      const matchesStatus = quotationStatusFilter === 'all' || quote.status === quotationStatusFilter
+                      return matchesSearch && matchesStatus
+                    })
+                    .length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        No se encontraron cotizaciones
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    quotations
+                      .filter((quote) => {
+                        const matchesSearch = quote.number.toLowerCase().includes(quotationSearchTerm.toLowerCase()) ||
+                                            quote.customer.toLowerCase().includes(quotationSearchTerm.toLowerCase())
+                        const matchesStatus = quotationStatusFilter === 'all' || quote.status === quotationStatusFilter
+                        return matchesSearch && matchesStatus
+                      })
+                      .map((quote) => (
+                        <TableRow key={quote.id}>
+                          <TableCell className="font-mono text-sm">{quote.number}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{quote.customer}</p>
+                              {quote.customerEmail && (
+                                <p className="text-xs text-muted-foreground">{quote.customerEmail}</p>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-sm">{quote.date}</TableCell>
+                          <TableCell className="text-sm">
+                            {quote.expiryDate ? (
+                              <span className={quote.status === 'expired' ? 'text-destructive' : ''}>
+                                {quote.expiryDate}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold">${quote.total.toLocaleString('es-UY', { minimumFractionDigits: 2 })}</TableCell>
+                          <TableCell>
+                            {quote.status === 'pending' && <Badge variant="secondary">Pendiente</Badge>}
+                            {quote.status === 'approved' && <Badge className="bg-blue-600">Aprobada</Badge>}
+                            {quote.status === 'rejected' && <Badge variant="destructive">Rechazada</Badge>}
+                            {quote.status === 'converted' && <Badge className="bg-green-600">Convertida</Badge>}
+                            {quote.status === 'expired' && <Badge variant="outline" className="border-red-500 text-red-500">Vencida</Badge>}
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Button variant="ghost" size="sm" onClick={() => {
+                                setSelectedQuotation(quote)
+                                setQuotationViewDialogOpen(true)
+                              }}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              {quote.status !== 'converted' && quote.status !== 'rejected' && (
+                                <>
+                                  <Button variant="ghost" size="sm" onClick={() => {
+                                    setSelectedQuotation(quote)
+                                    setQuotationEditDialogOpen(true)
+                                  }}>
+                                    <Edit className="h-4 w-4" />
+                                  </Button>
+                                  {quote.status === 'pending' && (
+                                    <Button size="sm" variant="outline" onClick={() => {
+                                      setQuotations(quotations.map(q => 
+                                        q.id === quote.id ? { ...q, status: 'converted' as const } : q
+                                      ))
+                                      toast({
+                                        title: "Cotización convertida",
+                                        description: `La cotización ${quote.number} se convirtió a venta correctamente.`,
+                                      })
+                                    }}>
+                                      Convertir a Venta
+                                    </Button>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Resumen */}
+            <div className="flex items-center justify-between pt-4 border-t">
+              <div className="text-sm text-muted-foreground">
+                Mostrando <span className="font-medium text-foreground">
+                  {quotations.filter((quote) => {
+                    const matchesSearch = quote.number.toLowerCase().includes(quotationSearchTerm.toLowerCase()) ||
+                                        quote.customer.toLowerCase().includes(quotationSearchTerm.toLowerCase())
+                    const matchesStatus = quotationStatusFilter === 'all' || quote.status === quotationStatusFilter
+                    return matchesSearch && matchesStatus
+                  }).length}
+                </span> cotización(es)
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Total: <span className="font-medium text-foreground">
+                  ${quotations
+                    .filter((quote) => {
+                      const matchesSearch = quote.number.toLowerCase().includes(quotationSearchTerm.toLowerCase()) ||
+                                          quote.customer.toLowerCase().includes(quotationSearchTerm.toLowerCase())
+                      const matchesStatus = quotationStatusFilter === 'all' || quote.status === quotationStatusFilter
+                      return matchesSearch && matchesStatus
+                    })
+                    .reduce((sum, q) => sum + q.total, 0)
+                    .toLocaleString('es-UY', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Quotation Dialog */}
+      <Dialog open={quotationViewDialogOpen} onOpenChange={setQuotationViewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalles de la Cotización</DialogTitle>
+            <DialogDescription>{selectedQuotation?.number}</DialogDescription>
+          </DialogHeader>
+          {selectedQuotation && (
+            <div className="space-y-6 py-4">
+              {/* Información del Cliente */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-muted-foreground">Cliente</Label>
+                  <p className="font-semibold text-lg mt-1">{selectedQuotation.customer}</p>
+                  {selectedQuotation.customerEmail && (
+                    <p className="text-sm text-muted-foreground mt-1">{selectedQuotation.customerEmail}</p>
+                  )}
+                  {selectedQuotation.customerPhone && (
+                    <p className="text-sm text-muted-foreground">{selectedQuotation.customerPhone}</p>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-muted-foreground">Fecha de Emisión</Label>
+                    <p className="mt-1">{selectedQuotation.date}</p>
+                  </div>
+                  {selectedQuotation.expiryDate && (
+                    <div>
+                      <Label className="text-muted-foreground">Válida Hasta</Label>
+                      <p className={`mt-1 ${selectedQuotation.status === 'expired' ? 'text-destructive font-semibold' : ''}`}>
+                        {selectedQuotation.expiryDate}
+                      </p>
+                    </div>
+                  )}
+                  <div>
+                    <Label className="text-muted-foreground">Estado</Label>
+                    <div className="mt-1">
+                      {selectedQuotation.status === 'pending' && <Badge variant="secondary">Pendiente</Badge>}
+                      {selectedQuotation.status === 'approved' && <Badge className="bg-blue-600">Aprobada</Badge>}
+                      {selectedQuotation.status === 'rejected' && <Badge variant="destructive">Rechazada</Badge>}
+                      {selectedQuotation.status === 'converted' && <Badge className="bg-green-600">Convertida</Badge>}
+                      {selectedQuotation.status === 'expired' && <Badge variant="outline" className="border-red-500 text-red-500">Vencida</Badge>}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Items de la Cotización */}
+              <div className="border-t pt-4">
+                <h4 className="font-semibold mb-4">Productos Cotizados</h4>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Producto</TableHead>
+                      <TableHead>SKU</TableHead>
+                      <TableHead className="text-right">Cantidad</TableHead>
+                      <TableHead className="text-right">Precio Unit.</TableHead>
+                      <TableHead className="text-right">Subtotal</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {selectedQuotation.items.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell className="font-mono text-sm text-muted-foreground">{item.sku}</TableCell>
+                        <TableCell className="text-right">{item.quantity}</TableCell>
+                        <TableCell className="text-right">${item.price.toLocaleString('es-UY', { minimumFractionDigits: 2 })}</TableCell>
+                        <TableCell className="text-right font-semibold">${item.subtotal.toLocaleString('es-UY', { minimumFractionDigits: 2 })}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Totales */}
+              <div className="border-t pt-4">
+                <div className="flex justify-end">
+                  <div className="w-64 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal:</span>
+                      <span>${(selectedQuotation.total / (1 + (selectedQuotation.tax || 0) / 100) / (1 - (selectedQuotation.discount || 0) / 100)).toFixed(2)}</span>
+                    </div>
+                    {selectedQuotation.discount && selectedQuotation.discount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Descuento ({selectedQuotation.discount}%):</span>
+                        <span className="text-green-600">-${((selectedQuotation.total / (1 + (selectedQuotation.tax || 0) / 100)) * (selectedQuotation.discount / 100)).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {selectedQuotation.tax && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">IVA ({selectedQuotation.tax}%):</span>
+                        <span>${(selectedQuotation.total - (selectedQuotation.total / (1 + selectedQuotation.tax / 100))).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                      <span>Total:</span>
+                      <span>${selectedQuotation.total.toLocaleString('es-UY', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notas */}
+              {selectedQuotation.notes && (
+                <div className="border-t pt-4">
+                  <Label className="text-muted-foreground">Notas</Label>
+                  <p className="mt-2 p-3 bg-muted rounded-lg">{selectedQuotation.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setQuotationViewDialogOpen(false)}>
+              Cerrar
+            </Button>
+            {selectedQuotation && (
+              <>
+                <Button variant="outline" onClick={() => {
+                  toast({ title: "Descargando", description: "Generando PDF de cotización..." })
+                }}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Descargar PDF
+                </Button>
+                {selectedQuotation.customerEmail && (
+                  <Button variant="outline" onClick={() => {
+                    toast({ title: "Enviando", description: `Enviando cotización a ${selectedQuotation.customerEmail}...` })
+                  }}>
+                    <Send className="h-4 w-4 mr-2" />
+                    Enviar por Email
+                  </Button>
+                )}
+                {selectedQuotation.status === 'pending' && (
+                  <Button onClick={() => {
+                    setQuotationViewDialogOpen(false)
+                    setQuotationEditDialogOpen(true)
+                  }}>
+                    <Edit className="h-4 w-4 mr-2" />
+                    Editar Cotización
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add/Edit Quotation Dialog */}
+      <Dialog open={quotationAddDialogOpen || quotationEditDialogOpen} onOpenChange={(open) => {
+        setQuotationAddDialogOpen(open && !quotationEditDialogOpen)
+        setQuotationEditDialogOpen(open && quotationAddDialogOpen)
+        if (!open) setSelectedQuotation(null)
+      }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{quotationEditDialogOpen ? 'Editar Cotización' : 'Nueva Cotización'}</DialogTitle>
+            <DialogDescription>
+              {quotationEditDialogOpen ? 'Modificar información de la cotización' : 'Crear una nueva cotización para un cliente'}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            {/* Información del Cliente */}
+            <div className="space-y-4">
+              <h4 className="font-semibold">Información del Cliente</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quote-customer">Cliente *</Label>
+                  <Input
+                    id="quote-customer"
+                    defaultValue={selectedQuotation?.customer || ''}
+                    placeholder="Nombre completo del cliente"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-email">Email</Label>
+                  <Input
+                    id="quote-email"
+                    type="email"
+                    defaultValue={selectedQuotation?.customerEmail || ''}
+                    placeholder="cliente@email.com"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quote-phone">Teléfono</Label>
+                <Input
+                  id="quote-phone"
+                  defaultValue={selectedQuotation?.customerPhone || ''}
+                  placeholder="+598 99 123 456"
+                />
+              </div>
+            </div>
+
+            {/* Fechas */}
+            <div className="space-y-4">
+              <h4 className="font-semibold">Fechas</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="quote-date">Fecha de Emisión *</Label>
+                  <Input
+                    id="quote-date"
+                    type="date"
+                    defaultValue={selectedQuotation?.date || new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="quote-expiry">Válida Hasta</Label>
+                  <Input
+                    id="quote-expiry"
+                    type="date"
+                    defaultValue={selectedQuotation?.expiryDate || ''}
+                  />
+                  <p className="text-xs text-muted-foreground">Opcional: fecha de vencimiento de la cotización</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Productos */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-semibold">Productos</h4>
+                <Button size="sm" variant="outline" onClick={() => {
+                  toast({ title: "Agregar producto", description: "Buscador de productos (funcionalidad en desarrollo)" })
+                }}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Agregar Producto
+                </Button>
+              </div>
+              {selectedQuotation ? (
+                <div className="border rounded-lg">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Producto</TableHead>
+                        <TableHead className="text-right">Cant.</TableHead>
+                        <TableHead className="text-right">Precio</TableHead>
+                        <TableHead className="text-right">Subtotal</TableHead>
+                        <TableHead className="w-[50px]"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedQuotation.items.map((item) => (
+                        <TableRow key={item.id}>
+                          <TableCell>
+                            <div>
+                              <p className="font-medium">{item.name}</p>
+                              <p className="text-xs text-muted-foreground">{item.sku}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-right">{item.quantity}</TableCell>
+                          <TableCell className="text-right">${item.price.toFixed(2)}</TableCell>
+                          <TableCell className="text-right font-semibold">${item.subtotal.toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Button variant="ghost" size="sm" onClick={() => {
+                              toast({ title: "Eliminando", description: "Removiendo producto..." })
+                            }}>
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="border rounded-lg p-8 text-center text-muted-foreground">
+                  <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>No hay productos agregados</p>
+                  <p className="text-sm mt-1">Haz clic en "Agregar Producto" para comenzar</p>
+                </div>
+              )}
+            </div>
+
+            {/* Descuentos e Impuestos */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="quote-discount">Descuento (%)</Label>
+                <Input
+                  id="quote-discount"
+                  type="number"
+                  min="0"
+                  max="100"
+                  defaultValue={selectedQuotation?.discount || 0}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quote-tax">IVA (%)</Label>
+                <Input
+                  id="quote-tax"
+                  type="number"
+                  min="0"
+                  max="100"
+                  defaultValue={selectedQuotation?.tax || 22}
+                  placeholder="22"
+                />
+              </div>
+            </div>
+
+            {/* Notas */}
+            <div className="space-y-2">
+              <Label htmlFor="quote-notes">Notas Adicionales</Label>
+              <Textarea
+                id="quote-notes"
+                defaultValue={selectedQuotation?.notes || ''}
+                placeholder="Información adicional sobre la cotización..."
+                rows={4}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => {
+              setQuotationAddDialogOpen(false)
+              setQuotationEditDialogOpen(false)
+              setSelectedQuotation(null)
+            }}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              const customerName = (document.getElementById('quote-customer') as HTMLInputElement)?.value
+              if (customerName && customerName.trim()) {
+                if (quotationEditDialogOpen && selectedQuotation) {
+                  const updated: Quotation = {
+                    ...selectedQuotation,
+                    customer: customerName.trim(),
+                    customerEmail: (document.getElementById('quote-email') as HTMLInputElement)?.value || undefined,
+                    customerPhone: (document.getElementById('quote-phone') as HTMLInputElement)?.value || undefined,
+                    date: (document.getElementById('quote-date') as HTMLInputElement)?.value || selectedQuotation.date,
+                    expiryDate: (document.getElementById('quote-expiry') as HTMLInputElement)?.value || undefined,
+                    discount: parseFloat((document.getElementById('quote-discount') as HTMLInputElement)?.value || '0'),
+                    tax: parseFloat((document.getElementById('quote-tax') as HTMLInputElement)?.value || '22'),
+                    notes: (document.getElementById('quote-notes') as HTMLTextAreaElement)?.value || undefined,
+                  }
+                  setQuotations(quotations.map(q => q.id === updated.id ? updated : q))
+                  setQuotationEditDialogOpen(false)
+                  toast({
+                    title: "Cotización actualizada",
+                    description: `La cotización ${updated.number} se actualizó correctamente.`,
+                  })
+                } else {
+                  const newNumber = `COT-2024-${String(quotations.length + 1).padStart(3, '0')}`
+                  const subtotal = 1000 // Placeholder, debería calcularse desde los items
+                  const discount = parseFloat((document.getElementById('quote-discount') as HTMLInputElement)?.value || '0')
+                  const tax = parseFloat((document.getElementById('quote-tax') as HTMLInputElement)?.value || '22')
+                  const total = (subtotal * (1 - discount / 100)) * (1 + tax / 100)
+                  
+                  const newQuotation: Quotation = {
+                    id: Date.now().toString(),
+                    number: newNumber,
+                    customer: customerName.trim(),
+                    customerEmail: (document.getElementById('quote-email') as HTMLInputElement)?.value || undefined,
+                    customerPhone: (document.getElementById('quote-phone') as HTMLInputElement)?.value || undefined,
+                    date: (document.getElementById('quote-date') as HTMLInputElement)?.value || new Date().toISOString().split('T')[0],
+                    expiryDate: (document.getElementById('quote-expiry') as HTMLInputElement)?.value || undefined,
+                    total,
+                    status: 'pending',
+                    items: [],
+                    discount,
+                    tax,
+                    notes: (document.getElementById('quote-notes') as HTMLTextAreaElement)?.value || undefined,
+                  }
+                  setQuotations([...quotations, newQuotation])
+                  setQuotationAddDialogOpen(false)
+                  toast({
+                    title: "Cotización creada",
+                    description: `La cotización ${newNumber} se creó correctamente.`,
+                  })
+                }
+                setSelectedQuotation(null)
+              }
+            }}>
+              {quotationEditDialogOpen ? 'Guardar Cambios' : 'Crear Cotización'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -675,23 +1373,294 @@ export function SalesModule() {
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">Puntos por compra</p>
-                    <p className="text-sm text-muted-foreground">1 punto por cada $10</p>
+                    <p className="text-sm text-muted-foreground">{loyaltyPointsPerPurchase.points} punto{loyaltyPointsPerPurchase.points !== 1 ? 's' : ''} por cada ${loyaltyPointsPerPurchase.amount}</p>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => toast({ title: "Configurando", description: "Editando regla de puntos" })}>
+                  <Button size="sm" variant="outline" onClick={() => setEditPointsPerPurchaseOpen(true)}>
                     Editar
                   </Button>
                 </div>
                 <div className="flex items-center justify-between p-3 border rounded-lg">
                   <div>
                     <p className="font-medium">Descuento con puntos</p>
-                    <p className="text-sm text-muted-foreground">100 puntos = $5 descuento</p>
+                    <p className="text-sm text-muted-foreground">{loyaltyPointsDiscount.points} puntos = ${loyaltyPointsDiscount.discount} descuento</p>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => toast({ title: "Configurando", description: "Editando regla de canje" })}>
+                  <Button size="sm" variant="outline" onClick={() => setEditPointsDiscountOpen(true)}>
                     Editar
                   </Button>
                 </div>
               </div>
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Points Per Purchase Dialog */}
+      <Dialog open={editPointsPerPurchaseOpen} onOpenChange={(open) => {
+        setEditPointsPerPurchaseOpen(open)
+        if (open) {
+          setTempPointsPerPurchase(loyaltyPointsPerPurchase)
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Puntos por Compra</DialogTitle>
+            <DialogDescription>Configurar cuántos puntos se otorgan por cada monto gastado</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="points-amount">Monto en pesos ($)</Label>
+              <Input
+                id="points-amount"
+                type="number"
+                min="1"
+                value={tempPointsPerPurchase.amount}
+                onChange={(e) => setTempPointsPerPurchase({ ...tempPointsPerPurchase, amount: parseFloat(e.target.value) || 0 })}
+                placeholder="10"
+              />
+              <p className="text-xs text-muted-foreground">Cada cuánto dinero se otorgan puntos</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="points-given">Puntos otorgados</Label>
+              <Input
+                id="points-given"
+                type="number"
+                min="1"
+                value={tempPointsPerPurchase.points}
+                onChange={(e) => setTempPointsPerPurchase({ ...tempPointsPerPurchase, points: parseInt(e.target.value) || 0 })}
+                placeholder="1"
+              />
+              <p className="text-xs text-muted-foreground">Cantidad de puntos otorgados</p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm font-medium">Vista previa:</p>
+              <p className="text-sm text-muted-foreground">
+                {tempPointsPerPurchase.points} punto{tempPointsPerPurchase.points !== 1 ? 's' : ''} por cada ${tempPointsPerPurchase.amount} gastados
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditPointsPerPurchaseOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              if (tempPointsPerPurchase.amount > 0 && tempPointsPerPurchase.points > 0) {
+                setLoyaltyPointsPerPurchase(tempPointsPerPurchase)
+                toast({
+                  title: "Configuración guardada",
+                  description: `Se actualizó la regla: ${tempPointsPerPurchase.points} punto${tempPointsPerPurchase.points !== 1 ? 's' : ''} por cada $${tempPointsPerPurchase.amount}`,
+                })
+                setEditPointsPerPurchaseOpen(false)
+              } else {
+                toast({
+                  title: "Error",
+                  description: "Los valores deben ser mayores a 0",
+                  variant: "destructive",
+                })
+              }
+            }}>
+              Guardar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Points Discount Dialog */}
+      <Dialog open={editPointsDiscountOpen} onOpenChange={(open) => {
+        setEditPointsDiscountOpen(open)
+        if (open) {
+          setTempPointsDiscount(loyaltyPointsDiscount)
+        }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Descuento con Puntos</DialogTitle>
+            <DialogDescription>Configurar cuántos puntos se necesitan para obtener un descuento</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="discount-points">Puntos requeridos</Label>
+              <Input
+                id="discount-points"
+                type="number"
+                min="1"
+                value={tempPointsDiscount.points}
+                onChange={(e) => setTempPointsDiscount({ ...tempPointsDiscount, points: parseInt(e.target.value) || 0 })}
+                placeholder="100"
+              />
+              <p className="text-xs text-muted-foreground">Cantidad de puntos necesarios para el descuento</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="discount-amount">Descuento en pesos ($)</Label>
+              <Input
+                id="discount-amount"
+                type="number"
+                min="1"
+                step="0.01"
+                value={tempPointsDiscount.discount}
+                onChange={(e) => setTempPointsDiscount({ ...tempPointsDiscount, discount: parseFloat(e.target.value) || 0 })}
+                placeholder="5"
+              />
+              <p className="text-xs text-muted-foreground">Monto del descuento otorgado</p>
+            </div>
+            <div className="p-3 bg-muted rounded-lg">
+              <p className="text-sm font-medium">Vista previa:</p>
+              <p className="text-sm text-muted-foreground">
+                {tempPointsDiscount.points} puntos = ${tempPointsDiscount.discount} de descuento
+              </p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setEditPointsDiscountOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={() => {
+              if (tempPointsDiscount.points > 0 && tempPointsDiscount.discount > 0) {
+                setLoyaltyPointsDiscount(tempPointsDiscount)
+                toast({
+                  title: "Configuración guardada",
+                  description: `Se actualizó la regla: ${tempPointsDiscount.points} puntos = $${tempPointsDiscount.discount} de descuento`,
+                })
+                setEditPointsDiscountOpen(false)
+              } else {
+                toast({
+                  title: "Error",
+                  description: "Los valores deben ser mayores a 0",
+                  variant: "destructive",
+                })
+              }
+            }}>
+              Guardar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detailed Order History Dialog */}
+      <Dialog open={detailedHistoryDialogOpen} onOpenChange={setDetailedHistoryDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalles de la Orden</DialogTitle>
+            <DialogDescription>{selectedOrder?.orderNumber}</DialogDescription>
+          </DialogHeader>
+          {selectedOrder && (
+            <div className="space-y-6 py-4">
+              {/* Información del Cliente */}
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <Label className="text-muted-foreground">Cliente</Label>
+                  <p className="font-semibold text-lg mt-1">{selectedOrder.customer}</p>
+                  {selectedOrder.customerEmail && (
+                    <p className="text-sm text-muted-foreground mt-1">{selectedOrder.customerEmail}</p>
+                  )}
+                  {selectedOrder.customerPhone && (
+                    <p className="text-sm text-muted-foreground">{selectedOrder.customerPhone}</p>
+                  )}
+                </div>
+                <div className="space-y-3">
+                  <div>
+                    <Label className="text-muted-foreground">Fecha</Label>
+                    <p className="mt-1">{selectedOrder.date}</p>
+                  </div>
+                  <div>
+                    <Label className="text-muted-foreground">Estado</Label>
+                    <div className="mt-1">
+                      {selectedOrder.status === 'completed' && <Badge className="bg-green-600">Completado</Badge>}
+                      {selectedOrder.status === 'pending' && <Badge variant="secondary">Pendiente</Badge>}
+                      {selectedOrder.status === 'cancelled' && <Badge variant="destructive">Cancelado</Badge>}
+                    </div>
+                  </div>
+                  {selectedOrder.paymentMethod && (
+                    <div>
+                      <Label className="text-muted-foreground">Método de Pago</Label>
+                      <p className="mt-1 capitalize">
+                        {selectedOrder.paymentMethod === 'cash' ? 'Efectivo' :
+                         selectedOrder.paymentMethod === 'card' ? 'Tarjeta' :
+                         selectedOrder.paymentMethod === 'transfer' ? 'Transferencia' : selectedOrder.paymentMethod}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Productos */}
+              {selectedOrder.products && selectedOrder.products.length > 0 && (
+                <div className="border-t pt-4">
+                  <h4 className="font-semibold mb-4">Productos</h4>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Producto</TableHead>
+                        <TableHead>SKU</TableHead>
+                        <TableHead className="text-right">Cantidad</TableHead>
+                        <TableHead className="text-right">Precio Unit.</TableHead>
+                        <TableHead className="text-right">Subtotal</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {selectedOrder.products.map((product) => (
+                        <TableRow key={product.id}>
+                          <TableCell className="font-medium">{product.name}</TableCell>
+                          <TableCell className="font-mono text-sm text-muted-foreground">{product.sku}</TableCell>
+                          <TableCell className="text-right">{product.quantity}</TableCell>
+                          <TableCell className="text-right">${product.price.toLocaleString('es-UY', { minimumFractionDigits: 2 })}</TableCell>
+                          <TableCell className="text-right font-semibold">${product.subtotal.toLocaleString('es-UY', { minimumFractionDigits: 2 })}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+
+              {/* Totales */}
+              <div className="border-t pt-4">
+                <div className="flex justify-end">
+                  <div className="w-64 space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal:</span>
+                      <span>${(selectedOrder.total / (1 + (selectedOrder.tax || 22) / 100) / (1 - (selectedOrder.discount || 0) / 100)).toFixed(2)}</span>
+                    </div>
+                    {selectedOrder.discount && selectedOrder.discount > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Descuento ({selectedOrder.discount}%):</span>
+                        <span className="text-green-600">-${((selectedOrder.total / (1 + (selectedOrder.tax || 22) / 100)) * (selectedOrder.discount / 100)).toFixed(2)}</span>
+                      </div>
+                    )}
+                    {selectedOrder.tax && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">IVA ({selectedOrder.tax}%):</span>
+                        <span>${(selectedOrder.total - (selectedOrder.total / (1 + selectedOrder.tax / 100))).toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                      <span>Total:</span>
+                      <span>${selectedOrder.total.toLocaleString('es-UY', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Notas */}
+              {selectedOrder.notes && (
+                <div className="border-t pt-4">
+                  <Label className="text-muted-foreground">Notas</Label>
+                  <p className="mt-2 p-3 bg-muted rounded-lg">{selectedOrder.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-4 border-t">
+            <Button variant="outline" onClick={() => setDetailedHistoryDialogOpen(false)}>
+              Cerrar
+            </Button>
+            {selectedOrder && (
+              <Button variant="outline" onClick={() => {
+                setDetailedHistoryDialogOpen(false)
+                setInvoiceDialogOpen(true)
+              }}>
+                <Receipt className="h-4 w-4 mr-2" />
+                Ver Factura
+              </Button>
+            )}
           </div>
         </DialogContent>
       </Dialog>

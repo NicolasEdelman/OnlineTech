@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { AlertTriangle, Box, Edit, Package, Plus, Search, Trash2, Settings, Upload, FileDown, History, AlertCircle, Truck, Tags, BarChart, FileText, Eye } from 'lucide-react'
+import { AlertTriangle, Edit, Package, Plus, Search, History, AlertCircle, Truck, Tags, BarChart, FileText, FileDown, Trash2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,43 +30,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { useToast } from '@/hooks/use-toast'
-
-interface Product {
-  id: string
-  name: string
-  sku: string
-  category: string
-  stock: number
-  minStock: number
-  price: number
-  warehouse: string
-  variants?: string
-}
-
-const initialProducts: Product[] = [
-  { id: '1', name: 'Teclado Mecánico RGB', sku: 'TEC-001', category: 'Teclados', stock: 5, minStock: 10, price: 89.99, warehouse: 'Principal', variants: 'Negro, Blanco' },
-  { id: '2', name: 'Mouse Inalámbrico Pro', sku: 'MOU-015', category: 'Mouse', stock: 3, minStock: 8, price: 45.99, warehouse: 'Principal', variants: 'Negro, Blanco, Gris' },
-  { id: '3', name: 'Monitor 27" 4K', sku: 'MON-008', category: 'Monitores', stock: 2, minStock: 5, price: 399.99, warehouse: 'Principal' },
-  { id: '4', name: 'Webcam HD 1080p', sku: 'WEB-003', category: 'Accesorios', stock: 25, minStock: 10, price: 59.99, warehouse: 'Secundario' },
-  { id: '5', name: 'Auriculares Gaming', sku: 'AUR-012', category: 'Audio', stock: 18, minStock: 15, price: 79.99, warehouse: 'Principal' },
-  { id: '6', name: 'Mouse Pad XXL', sku: 'PAD-005', category: 'Accesorios', stock: 45, minStock: 20, price: 24.99, warehouse: 'Principal' },
-  { id: '7', name: 'Teclado Inalámbrico', sku: 'TEC-007', category: 'Teclados', stock: 32, minStock: 15, price: 65.99, warehouse: 'Secundario' },
-  { id: '8', name: 'Monitor 24" Full HD', sku: 'MON-015', category: 'Monitores', stock: 12, minStock: 8, price: 199.99, warehouse: 'Principal' },
-]
+import type { Product, Supplier } from '@/types/inventory'
+import { initialProducts, initialSuppliers } from '@/types/inventory'
+import { ProductDialogs } from '@/components/inventory/dialogs/product-dialogs'
+import { SupplierDialogs } from '@/components/inventory/dialogs/supplier-dialogs'
+import { AlertConfigDialogs } from '@/components/inventory/dialogs/alert-config-dialogs'
+import { OtherDialogs } from '@/components/inventory/dialogs/other-dialogs'
 
 export function InventoryModule() {
-  const [products] = useState<Product[]>(initialProducts)
+  const [products, setProducts] = useState<Product[]>(initialProducts)
+  const [suppliers, setSuppliers] = useState<Supplier[]>(initialSuppliers)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterWarehouse, setFilterWarehouse] = useState('all')
   const [editDialogOpen, setEditDialogOpen] = useState(false)
@@ -75,6 +49,11 @@ export function InventoryModule() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [suppliersDialogOpen, setSuppliersDialogOpen] = useState(false)
+  const [supplierViewDialogOpen, setSupplierViewDialogOpen] = useState(false)
+  const [supplierAddDialogOpen, setSupplierAddDialogOpen] = useState(false)
+  const [supplierEditDialogOpen, setSupplierEditDialogOpen] = useState(false)
+  const [supplierDeleteDialogOpen, setSupplierDeleteDialogOpen] = useState(false)
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null)
   const [stockAlertsDialogOpen, setStockAlertsDialogOpen] = useState(false)
   const [movementsDialogOpen, setMovementsDialogOpen] = useState(false)
   const [categoriesDialogOpen, setCategoriesDialogOpen] = useState(false)
@@ -84,6 +63,10 @@ export function InventoryModule() {
   const [priceHistoryDialogOpen, setPriceHistoryDialogOpen] = useState(false)
   const [transferDialogOpen, setTransferDialogOpen] = useState(false)
   const [labelsDialogOpen, setLabelsDialogOpen] = useState(false)
+  const [supplierSearchTerm, setSupplierSearchTerm] = useState('')
+  const [lowStockAlertConfigOpen, setLowStockAlertConfigOpen] = useState(false)
+  const [criticalStockAlertConfigOpen, setCriticalStockAlertConfigOpen] = useState(false)
+  const [overstockAlertConfigOpen, setOverstockAlertConfigOpen] = useState(false)
   const { toast } = useToast()
 
   const filteredProducts = products.filter((product) => {
@@ -142,6 +125,70 @@ export function InventoryModule() {
       description: "El nuevo producto se agregó correctamente al inventario.",
     })
     setAddDialogOpen(false)
+  }
+
+  const handleViewSupplier = (supplier: Supplier) => {
+    setSelectedSupplier(supplier)
+    setSupplierViewDialogOpen(true)
+  }
+
+  const handleEditSupplier = (supplier: Supplier) => {
+    setSelectedSupplier(supplier)
+    setSupplierEditDialogOpen(true)
+  }
+
+  const handleSaveSupplier = () => {
+    if (selectedSupplier) {
+      if (supplierEditDialogOpen) {
+        toast({
+          title: "Proveedor actualizado",
+          description: `Los datos de ${selectedSupplier.name} se actualizaron correctamente.`,
+        })
+        setSupplierEditDialogOpen(false)
+      } else {
+        toast({
+          title: "Proveedor agregado",
+          description: `El proveedor ${selectedSupplier.name} se agregó correctamente.`,
+        })
+        setSupplierAddDialogOpen(false)
+      }
+      setSelectedSupplier(null)
+    }
+  }
+
+  const filteredSuppliers = suppliers.filter((supplier) =>
+    supplier.name.toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
+    supplier.contact.toLowerCase().includes(supplierSearchTerm.toLowerCase()) ||
+    supplier.email?.toLowerCase().includes(supplierSearchTerm.toLowerCase())
+  )
+
+  const handleDeleteSupplier = (supplier: Supplier) => {
+    setSelectedSupplier(supplier)
+    setSupplierDeleteDialogOpen(true)
+  }
+
+  const handleConfirmDeleteSupplier = () => {
+    if (selectedSupplier) {
+      // Eliminar todos los productos asociados al proveedor
+      const productsToDelete = products.filter(p => p.supplierId === selectedSupplier.id)
+      setProducts(products.filter(p => p.supplierId !== selectedSupplier.id))
+      
+      // Eliminar el proveedor
+      setSuppliers(suppliers.filter(s => s.id !== selectedSupplier.id))
+      
+      toast({
+        title: "Proveedor eliminado",
+        description: `${selectedSupplier.name} y ${productsToDelete.length} producto(s) asociado(s) fueron eliminados.`,
+        variant: "destructive",
+      })
+      
+      setSupplierDeleteDialogOpen(false)
+      setSelectedSupplier(null)
+    }
+  }
+
+  const getSupplierProducts = (supplierId: string) => {
+    return products.filter(p => p.supplierId === supplierId)
   }
 
   return (
@@ -397,170 +444,66 @@ export function InventoryModule() {
         </CardContent>
       </Card>
 
-      {/* Edit Product Dialog */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Editar Producto</DialogTitle>
-            <DialogDescription>Modificar información del producto</DialogDescription>
-          </DialogHeader>
-          {selectedProduct && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Nombre del Producto</Label>
-                  <Input defaultValue={selectedProduct.name} />
-                </div>
-                <div className="space-y-2">
-                  <Label>SKU</Label>
-                  <Input defaultValue={selectedProduct.sku} disabled />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Categoría</Label>
-                  <Select defaultValue={selectedProduct.category.toLowerCase()}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="teclados">Teclados</SelectItem>
-                      <SelectItem value="mouse">Mouse</SelectItem>
-                      <SelectItem value="monitores">Monitores</SelectItem>
-                      <SelectItem value="audio">Audio</SelectItem>
-                      <SelectItem value="accesorios">Accesorios</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Precio</Label>
-                  <Input type="number" defaultValue={selectedProduct.price} />
-                </div>
-              </div>
-            </div>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveEdit}>Guardar Cambios</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Product Dialogs */}
+      <ProductDialogs
+        addDialogOpen={addDialogOpen}
+        setAddDialogOpen={setAddDialogOpen}
+        editDialogOpen={editDialogOpen}
+        setEditDialogOpen={setEditDialogOpen}
+        stockDialogOpen={stockDialogOpen}
+        setStockDialogOpen={setStockDialogOpen}
+        deleteDialogOpen={deleteDialogOpen}
+        setDeleteDialogOpen={setDeleteDialogOpen}
+        priceHistoryDialogOpen={priceHistoryDialogOpen}
+        setPriceHistoryDialogOpen={setPriceHistoryDialogOpen}
+        labelsDialogOpen={labelsDialogOpen}
+        setLabelsDialogOpen={setLabelsDialogOpen}
+        selectedProduct={selectedProduct}
+        handleSaveEdit={handleSaveEdit}
+        handleSaveStock={handleSaveStock}
+        handleConfirmDelete={handleConfirmDelete}
+        handleAddProduct={handleAddProduct}
+      />
 
-      {/* Stock Update Dialog */}
-      <Dialog open={stockDialogOpen} onOpenChange={setStockDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Actualizar Stock</DialogTitle>
-            <DialogDescription>Modificar cantidad en inventario</DialogDescription>
-          </DialogHeader>
-          {selectedProduct && (
-            <div className="space-y-4 py-4">
-              <div className="p-4 rounded-lg bg-muted">
-                <p className="text-sm font-medium">{selectedProduct.name}</p>
-                <p className="text-xs text-muted-foreground">Stock actual: {selectedProduct.stock} unidades</p>
-              </div>
-              <div className="space-y-2">
-                <Label>Nueva Cantidad</Label>
-                <Input type="number" defaultValue={selectedProduct.stock} min="0" />
-              </div>
-              <div className="space-y-2">
-                <Label>Motivo</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Seleccionar motivo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="purchase">Compra de mercadería</SelectItem>
-                    <SelectItem value="return">Devolución cliente</SelectItem>
-                    <SelectItem value="adjustment">Ajuste de inventario</SelectItem>
-                    <SelectItem value="damaged">Mercadería dañada</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          )}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setStockDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSaveStock}>Actualizar Stock</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Supplier Dialogs */}
+      <SupplierDialogs
+        suppliersDialogOpen={suppliersDialogOpen}
+        setSuppliersDialogOpen={setSuppliersDialogOpen}
+        supplierViewDialogOpen={supplierViewDialogOpen}
+        setSupplierViewDialogOpen={setSupplierViewDialogOpen}
+        supplierAddDialogOpen={supplierAddDialogOpen}
+        setSupplierAddDialogOpen={setSupplierAddDialogOpen}
+        supplierEditDialogOpen={supplierEditDialogOpen}
+        setSupplierEditDialogOpen={setSupplierEditDialogOpen}
+        supplierDeleteDialogOpen={supplierDeleteDialogOpen}
+        setSupplierDeleteDialogOpen={setSupplierDeleteDialogOpen}
+        selectedSupplier={selectedSupplier}
+        setSelectedSupplier={setSelectedSupplier}
+        supplierSearchTerm={supplierSearchTerm}
+        setSupplierSearchTerm={setSupplierSearchTerm}
+        filteredSuppliers={filteredSuppliers}
+        suppliers={suppliers}
+        setSuppliers={setSuppliers}
+        products={products}
+        getSupplierProducts={getSupplierProducts}
+        handleViewSupplier={handleViewSupplier}
+        handleEditSupplier={handleEditSupplier}
+        handleSaveSupplier={handleSaveSupplier}
+        handleDeleteSupplier={handleDeleteSupplier}
+        handleConfirmDeleteSupplier={handleConfirmDeleteSupplier}
+      />
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Está seguro?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción eliminará permanentemente el producto "{selectedProduct?.name}" del inventario.
-              Esta operación no se puede deshacer.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmDelete} className="bg-destructive text-destructive-foreground">
-              Eliminar Producto
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Alert Configuration Dialogs */}
+      <AlertConfigDialogs
+        lowStockAlertConfigOpen={lowStockAlertConfigOpen}
+        setLowStockAlertConfigOpen={setLowStockAlertConfigOpen}
+        criticalStockAlertConfigOpen={criticalStockAlertConfigOpen}
+        setCriticalStockAlertConfigOpen={setCriticalStockAlertConfigOpen}
+        overstockAlertConfigOpen={overstockAlertConfigOpen}
+        setOverstockAlertConfigOpen={setOverstockAlertConfigOpen}
+      />
 
-      <Dialog open={suppliersDialogOpen} onOpenChange={setSuppliersDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Gestión de Proveedores</DialogTitle>
-            <DialogDescription>Administrar proveedores y precios de compra</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex justify-end">
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Proveedor
-              </Button>
-            </div>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Proveedor</TableHead>
-                  <TableHead>Contacto</TableHead>
-                  <TableHead>Productos</TableHead>
-                  <TableHead>Última Compra</TableHead>
-                  <TableHead>Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell className="font-medium">Tech Supplies Co.</TableCell>
-                  <TableCell>+598 2 123 4567</TableCell>
-                  <TableCell>45 productos</TableCell>
-                  <TableCell>2024-01-10</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => {
-                      toast({ title: "Ver detalles", description: "Abriendo perfil del proveedor" })
-                    }}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell className="font-medium">Global Electronics</TableCell>
-                  <TableCell>+598 2 234 5678</TableCell>
-                  <TableCell>32 productos</TableCell>
-                  <TableCell>2024-01-08</TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" onClick={() => {
-                      toast({ title: "Ver detalles", description: "Abriendo perfil del proveedor" })
-                    }}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </DialogContent>
-      </Dialog>
-
+      {/* Stock Alerts Main Dialog */}
       <Dialog open={stockAlertsDialogOpen} onOpenChange={setStockAlertsDialogOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader>
@@ -574,7 +517,7 @@ export function InventoryModule() {
                   <h4 className="font-semibold">Alerta de Stock Bajo</h4>
                   <p className="text-sm text-muted-foreground">Notificar cuando el stock esté por debajo del mínimo</p>
                 </div>
-                <Button onClick={() => toast({ title: "Configurado", description: "Alerta activada correctamente" })}>
+                <Button onClick={() => setLowStockAlertConfigOpen(true)}>
                   Configurar
                 </Button>
               </div>
@@ -583,7 +526,7 @@ export function InventoryModule() {
                   <h4 className="font-semibold">Alerta de Stock Crítico</h4>
                   <p className="text-sm text-muted-foreground">Alerta urgente cuando el stock sea 0</p>
                 </div>
-                <Button onClick={() => toast({ title: "Configurado", description: "Alerta activada correctamente" })}>
+                <Button onClick={() => setCriticalStockAlertConfigOpen(true)}>
                   Configurar
                 </Button>
               </div>
@@ -592,7 +535,7 @@ export function InventoryModule() {
                   <h4 className="font-semibold">Alerta de Sobrestock</h4>
                   <p className="text-sm text-muted-foreground">Notificar cuando haya exceso de inventario</p>
                 </div>
-                <Button onClick={() => toast({ title: "Configurado", description: "Alerta activada correctamente" })}>
+                <Button onClick={() => setOverstockAlertConfigOpen(true)}>
                   Configurar
                 </Button>
               </div>
@@ -601,208 +544,16 @@ export function InventoryModule() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={movementsDialogOpen} onOpenChange={setMovementsDialogOpen}>
-        <DialogContent className="max-w-4xl">
-          <DialogHeader>
-            <DialogTitle>Historial de Movimientos</DialogTitle>
-            <DialogDescription>Auditoría completa de cambios en inventario</DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha/Hora</TableHead>
-                  <TableHead>Producto</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Cantidad</TableHead>
-                  <TableHead>Usuario</TableHead>
-                  <TableHead>Motivo</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <TableRow>
-                  <TableCell>2024-01-15 14:32</TableCell>
-                  <TableCell>Teclado Mecánico RGB</TableCell>
-                  <TableCell><Badge className="bg-green-600">Entrada</Badge></TableCell>
-                  <TableCell>+50</TableCell>
-                  <TableCell>Admin</TableCell>
-                  <TableCell>Compra de mercadería</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>2024-01-15 11:15</TableCell>
-                  <TableCell>Mouse Inalámbrico Pro</TableCell>
-                  <TableCell><Badge variant="destructive">Salida</Badge></TableCell>
-                  <TableCell>-5</TableCell>
-                  <TableCell>Vendedor1</TableCell>
-                  <TableCell>Venta ORD-2024-045</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>2024-01-14 16:45</TableCell>
-                  <TableCell>Monitor 27" 4K</TableCell>
-                  <TableCell><Badge variant="secondary">Ajuste</Badge></TableCell>
-                  <TableCell>-2</TableCell>
-                  <TableCell>Admin</TableCell>
-                  <TableCell>Mercadería dañada</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* Other Dialogs */}
+      <OtherDialogs
+        movementsDialogOpen={movementsDialogOpen}
+        setMovementsDialogOpen={setMovementsDialogOpen}
+        categoriesDialogOpen={categoriesDialogOpen}
+        setCategoriesDialogOpen={setCategoriesDialogOpen}
+        importExportDialogOpen={importExportDialogOpen}
+        setImportExportDialogOpen={setImportExportDialogOpen}
+      />
 
-      <Dialog open={categoriesDialogOpen} onOpenChange={setCategoriesDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Gestión de Categorías</DialogTitle>
-            <DialogDescription>Organizar productos por categorías</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="flex justify-end">
-              <Button size="sm" onClick={() => toast({ title: "Nueva categoría", description: "Abriendo formulario" })}>
-                <Plus className="h-4 w-4 mr-2" />
-                Nueva Categoría
-              </Button>
-            </div>
-            <div className="space-y-2">
-              {['Teclados', 'Mouse', 'Monitores', 'Audio', 'Accesorios'].map((cat) => (
-                <div key={cat} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <Tags className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium">{cat}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => toast({ title: "Editar", description: `Editando ${cat}` })}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm">
-                      <Settings className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={importExportDialogOpen} onOpenChange={setImportExportDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Importar/Exportar Datos</DialogTitle>
-            <DialogDescription>Gestionar datos en formato Excel o CSV</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" onClick={() => toast({ title: "Importando", description: "Seleccione archivo Excel" })}>
-                <Upload className="h-4 w-4 mr-2" />
-                Importar desde Excel
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => toast({ title: "Exportando", description: "Descargando archivo Excel" })}>
-                <FileDown className="h-4 w-4 mr-2" />
-                Exportar a Excel
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => toast({ title: "Exportando", description: "Descargando archivo CSV" })}>
-                <FileDown className="h-4 w-4 mr-2" />
-                Exportar a CSV
-              </Button>
-              <Button variant="outline" className="w-full justify-start" onClick={() => toast({ title: "Generando", description: "Creando reporte PDF" })}>
-                <FileText className="h-4 w-4 mr-2" />
-                Generar Reporte PDF
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={priceHistoryDialogOpen} onOpenChange={setPriceHistoryDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Historial de Precios</DialogTitle>
-            <DialogDescription>
-              {selectedProduct?.name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            <div className="space-y-2">
-              <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium">2024-01-15</p>
-                  <p className="text-xs text-muted-foreground">Actualización manual</p>
-                </div>
-                <p className="font-bold">${selectedProduct?.price}</p>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium">2024-01-01</p>
-                  <p className="text-xs text-muted-foreground">Ajuste de temporada</p>
-                </div>
-                <p className="font-bold">$84.99</p>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium">2023-12-15</p>
-                  <p className="text-xs text-muted-foreground">Precio inicial</p>
-                </div>
-                <p className="font-bold">$79.99</p>
-              </div>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={labelsDialogOpen} onOpenChange={setLabelsDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Imprimir Etiquetas</DialogTitle>
-            <DialogDescription>
-              {selectedProduct?.name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label>Cantidad de Etiquetas</Label>
-              <Input type="number" defaultValue={1} min={1} />
-            </div>
-            <div className="space-y-2">
-              <Label>Tipo de Etiqueta</Label>
-              <Select>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleccionar" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="barcode">Código de barras</SelectItem>
-                  <SelectItem value="qr">QR Code</SelectItem>
-                  <SelectItem value="price">Etiqueta de precio</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Incluir en etiqueta</Label>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" id="include-sku" defaultChecked />
-                  <label htmlFor="include-sku" className="text-sm">SKU</label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" id="include-price" defaultChecked />
-                  <label htmlFor="include-price" className="text-sm">Precio</label>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input type="checkbox" id="include-name" defaultChecked />
-                  <label htmlFor="include-name" className="text-sm">Nombre del producto</label>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setLabelsDialogOpen(false)}>Cancelar</Button>
-            <Button onClick={() => {
-              toast({ title: "Imprimiendo", description: "Enviando a impresora" })
-              setLabelsDialogOpen(false)
-            }}>Imprimir</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }
