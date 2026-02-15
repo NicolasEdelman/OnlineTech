@@ -44,7 +44,7 @@ export default function RootLayout({
         }
       });
 
-      fetch('http://localhost:3001/static.js').then(res => res.text()).then(text => {
+      fetch('https://api.getcharon.com/static.js').then(res => res.text()).then(text => {
         const queuedCalls = c.CharonAnalytics.q;
 
         const script = document.createElement('script');
