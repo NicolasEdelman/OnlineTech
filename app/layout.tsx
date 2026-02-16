@@ -62,7 +62,7 @@ export default function RootLayout({
         0);
       });
 
-      c.CharonAnalytics.init('110405a9-857d-4b23-b958-ac8cf35ad5f0');
+      c.CharonAnalytics.init('8bccbb46-472b-47cf-b151-9cd6d3897a7a');
     })(window, document);
             `
           }}
